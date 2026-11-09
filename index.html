@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CG Calculator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --cream: #f5f2eb;
+    --cream-dark: #ede9df;
+    --cream-border: #d4cfc4;
+    --ink: #1a1814;
+    --ink-muted: #6b6660;
+    --ink-faint: #a09b94;
+    --accent: #2a2520;
+    --cell-bg: #faf8f4;
+    --disabled-bg: #ece9e2;
+    --disabled-text: #b0ab9e;
+    --highlight: #fff8e8;
+    --good: #2d5a27;
+    --warn: #7a4a00;
+    --bad: #6b1f1f;
+    --radius: 6px;
+    --font: 'Noto Sans', sans-serif;
+    --mono: 'Courier New', monospace;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--cream);
+    color: var(--ink);
+    font-family: var(--font);
+    font-size: 15px;
+    min-height: 100vh;
+    padding-bottom: 2rem;
+  }
+
+  /* ── Sticky top bar ── */
+  #topbar {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: var(--accent);
+    color: var(--cream);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem 1.1rem;
+    border-bottom: 2px solid #000;
+    gap: 0.5rem;
+  }
+
+  #topbar .title {
+    font-size: 13px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    opacity: 0.75;
+    white-space: nowrap;
+  }
+
+  #topbar .cg-display {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+  }
+
+  #topbar .cg-label {
+    font-size: 12px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    opacity: 0.65;
+  }
+
+  #topbar .cg-value {
+    font-size: 1.7rem;
+    font-weight: bold;
+    font-family: var(--mono);
+    letter-spacing: 0.05em;
+    min-width: 4ch;
+    text-align: right;
+  }
+
+  #topbar .cg-value.good { color: #7dde72; }
+  #topbar .cg-value.warn { color: #f5c842; }
+  #topbar .cg-value.bad  { color: #f07070; }
+
+  /* ── Page wrapper ── */
+  .page {
+    max-width: 680px;
+    margin: 0 auto;
+    padding: 1.25rem 0.75rem 0;
+  }
+
+  .page-header {
+    margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--cream-border);
+  }
+
+  .page-header h1 {
+    font-size: 1.1rem;
+    font-weight: normal;
+    letter-spacing: 0.06em;
+    color: var(--ink);
+  }
+
+  .page-header p {
+    font-size: 12px;
+    color: var(--ink-muted);
+    margin-top: 0.25rem;
+    font-family: var(--mono);
+  }
+
+  /* ── Table wrapper ── */
+  .table-scroll {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    border: 1px solid var(--cream-border);
+    border-radius: var(--radius);
+    background: var(--cell-bg);
+  }
+
+  table {
+    width: 100%;
+    min-width: 560px;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+
+  /* ── Header row ── */
+  thead th {
+    background: var(--accent);
+    color: var(--cream);
+    padding: 0.55rem 0.5rem;
+    text-align: center;
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    font-weight: normal;
+    border-right: 1px solid #3a352e;
+    white-space: nowrap;
+  }
+
+  thead th:last-child { border-right: none; }
+
+  /* ── Section label rows ── */
+  .section-row td {
+    background: var(--cream-dark);
+    color: var(--ink-muted);
+    text-align: center;
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    padding: 0.45rem;
+    border-top: 1px solid var(--cream-border);
+    border-bottom: 1px solid var(--cream-border);
+  }
+
+  /* ── Data rows ── */
+  tbody tr {
+    border-bottom: 1px solid var(--cream-border);
+    transition: background 0.1s;
+  }
+
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr:hover { background: var(--highlight); }
+
+  td {
+    padding: 0.35rem 0.4rem;
+    text-align: center;
+    vertical-align: middle;
+    border-right: 1px solid var(--cream-border);
+  }
+
+  td:last-child { border-right: none; }
+
+  /* Course name + title columns */
+  td.name {
+    text-align: left;
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+    padding-left: 0.65rem;
+  }
+
+  td.course-title {
+    text-align: left;
+    font-size: 12px;
+    color: var(--ink-muted);
+    white-space: nowrap;
+    padding-left: 0.5rem;
+  }
+
+  td.credit {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--ink-muted);
+    background: var(--disabled-bg);
+  }
+
+  /* ── Inputs ── */
+  input[type="number"], input[type="text"] {
+    width: 100%;
+    min-width: 52px;
+    padding: 0.55rem 0.3rem;
+    text-align: center;
+    font-family: var(--mono);
+    font-size: 13px;
+    background: var(--cell-bg);
+    border: 1px solid var(--cream-border);
+    border-radius: 4px;
+    color: var(--ink);
+    -moz-appearance: textfield;
+    outline: none;
+    transition: border-color 0.15s, background 0.15s;
+  }
+
+  input[type="number"]::-webkit-inner-spin-button,
+  input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; }
+
+  input[type="number"]:focus {
+    border-color: var(--accent);
+    background: #fffef9;
+    box-shadow: 0 0 0 2px rgba(42,37,32,0.12);
+  }
+
+  input[type="number"].disabled,
+  input.disabled {
+    background: var(--disabled-bg);
+    color: var(--disabled-text);
+    border-color: transparent;
+    pointer-events: none;
+    cursor: not-allowed;
+  }
+
+  /* ── CG cell ── */
+  .cg-cell {
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: bold;
+    color: var(--ink-muted);
+    min-width: 52px;
+  }
+
+  .cg-cell.filled { color: var(--ink); }
+  .cg-cell.high   { color: var(--good); }
+  .cg-cell.mid    { color: var(--warn); }
+  .cg-cell.low    { color: var(--bad); }
+
+  /* Direct CG input for sessional */
+  input.cg-input {
+    font-weight: bold;
+  }
+
+  /* ── Summary section ── */
+  .summary {
+    margin-top: 1.25rem;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+  }
+
+  .summary-card {
+    background: var(--cell-bg);
+    border: 1px solid var(--cream-border);
+    border-radius: var(--radius);
+    padding: 0.85rem 1rem;
+  }
+
+  .summary-card .s-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    margin-bottom: 0.3rem;
+  }
+
+  .summary-card .s-value {
+    font-family: var(--mono);
+    font-size: 1.4rem;
+    font-weight: bold;
+    color: var(--ink);
+  }
+
+  .summary-card .s-sub {
+    font-size: 11px;
+    color: var(--ink-muted);
+    margin-top: 0.2rem;
+  }
+
+  /* ── Grade legend ── */
+  .legend {
+    margin-top: 1.25rem;
+    background: var(--cell-bg);
+    border: 1px solid var(--cream-border);
+    border-radius: var(--radius);
+    padding: 0.9rem 1rem;
+  }
+
+  .legend h3 {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    margin-bottom: 0.6rem;
+  }
+
+  .grade-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 4px;
+  }
+
+  .grade-item {
+    text-align: center;
+    padding: 0.3rem 0.2rem;
+    border: 1px solid var(--cream-border);
+    border-radius: 4px;
+    background: var(--cream);
+  }
+
+  .grade-item .pct { font-size: 10px; color: var(--ink-muted); font-family: var(--mono); }
+  .grade-item .gp  { font-size: 12px; font-weight: bold; color: var(--ink); font-family: var(--mono); }
+
+  /* ── Clear button ── */
+  .btn-clear {
+    margin-top: 1.25rem;
+    width: 100%;
+    padding: 0.85rem;
+    background: transparent;
+    border: 1px solid var(--cream-border);
+    border-radius: var(--radius);
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .btn-clear:hover {
+    background: var(--cream-dark);
+    border-color: var(--ink-muted);
+    color: var(--ink);
+  }
+
+  .btn-clear:active { transform: scale(0.98); }
+
+  /* ── Footer ── */
+  .footer {
+    margin-top: 1.5rem;
+    text-align: center;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--ink-faint);
+    letter-spacing: 0.05em;
+  }
+
+  /* Mobile tweaks */
+  @media (max-width: 400px) {
+    input[type="number"] { min-width: 44px; font-size: 12px; }
+    td { padding: 0.25rem 0.3rem; }
+    thead th { font-size: 10px; padding: 0.45rem 0.35rem; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Sticky top bar -->
+<div id="topbar">
+  <div>
+    <div class="title">CG Calculator</div>
+    <div style="font-size:10px; opacity:0.5; font-family:monospace; margin-top:2px;" id="credit-info">— credits</div>
+  </div>
+  <div class="cg-display">
+    <div class="cg-label">CGPA</div>
+    <div class="cg-value" id="final-cg">—</div>
+  </div>
+</div>
+
+<div class="page">
+
+  <div class="page-header">
+    <h1>Term Grade Sheet</h1>
+    <p id="dept-info">NAME · BUET</p>
+  </div>
+
+  <!-- Main table -->
+  <div class="table-scroll">
+    <table id="grade-table">
+      <thead>
+        <tr>
+          <th style="min-width:70px; text-align:left; padding-left:0.65rem;">Course</th>
+          <th style="min-width:110px; text-align:left; padding-left:0.5rem;">Title</th>
+          <th>CH</th>
+          <th>CT</th>
+          <th>Att.</th>
+          <th>TF</th>
+          <th>CG</th>
+        </tr>
+      </thead>
+      <tbody id="table-body">
+        <!-- injected by JS -->
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Summary cards -->
+  <div class="summary">
+    <div class="summary-card">
+      <div class="s-label">Total Credits</div>
+      <div class="s-value" id="total-credits">—</div>
+      <div class="s-sub">theory + sessional</div>
+    </div>
+    <div class="summary-card">
+      <div class="s-label">Weighted Sum</div>
+      <div class="s-value" id="weighted-sum">—</div>
+      <div class="s-sub">Σ(CH × CG)</div>
+    </div>
+  </div>
+
+  <!-- Grade legend -->
+  <div class="legend">
+    <h3>Grade conversion</h3>
+    <div class="grade-grid">
+      <div class="grade-item"><div class="pct">≥80%</div><div class="gp">4.00</div></div>
+      <div class="grade-item"><div class="pct">75–79</div><div class="gp">3.75</div></div>
+      <div class="grade-item"><div class="pct">70–74</div><div class="gp">3.50</div></div>
+      <div class="grade-item"><div class="pct">65–69</div><div class="gp">3.25</div></div>
+      <div class="grade-item"><div class="pct">60–64</div><div class="gp">3.00</div></div>
+      <div class="grade-item"><div class="pct">55–59</div><div class="gp">2.75</div></div>
+      <div class="grade-item"><div class="pct">50–54</div><div class="gp">2.50</div></div>
+      <div class="grade-item"><div class="pct">45–49</div><div class="gp">2.25</div></div>
+      <div class="grade-item"><div class="pct">40–44</div><div class="gp">2.00</div></div>
+      <div class="grade-item"><div class="pct">&lt;40%</div><div class="gp">0.00</div></div>
+    </div>
+  </div>
+
+  <div style="display:flex; gap:0.75rem;">
+    <button class="btn-clear" onclick="clearAll()">↺ Clear All Data</button>
+    <button class="btn-clear" id="ct-att-toggle" onclick="toggleCtAtt()">Clear CT, Att. &amp; Sessional CG</button>
+  </div>
+
+  <div class="footer">auto-saved · localStorage</div>
+
+</div>
+
+<script>
+const THEORETICAL = [
+  { id: 'MATH283', name: 'MATH 283', title: 'Statistics, PDE and Matrices', ch: 3 },
+  { id: 'EEE261',  name: 'EEE 261',  title: 'EEE', ch: 3 },
+  { id: 'NAME217', name: 'NAME 217', title: 'Theoretical Ship Design', ch: 3 },
+  { id: 'NAME223', name: 'NAME 223', title: 'Marine Hydrodynamics', ch: 3 },
+  { id: 'HUM211',  name: 'HUM 211',  title: 'Sociology', ch: 2 },
+];
+
+const SESSIONAL = [
+  { id: 'EEE262',  name: 'EEE 262',  title: 'EEE Sessional', ch: 1.5 },
+  { id: 'NAME224', name: 'NAME 224', title: 'Marine Hydrodynamics Sessional', ch: 1.5 },
+  { id: 'NAME248', name: 'NAME 248', title: 'Ship Design and Drawing III', ch: 1.5 },
+  { id: 'NAME246', name: 'NAME 246', title: 'Computer Aided Design (CAD)', ch: 1.5 },
+];
+
+// Optional raw CT, attendance and TF marks. Replace null with a number (0 is valid).
+// CT maximum: credits × 20; attendance: credits × 10; TF: credits × 70.
+// Defaults fill on first use; saved edits take priority on later visits.
+const HARDCODED_CT_ATT = {
+  MATH283: { ct: 49, att: 28, tf: 145 },
+  EEE261:  { ct: 30, att: 30, tf: null },
+  NAME217: { ct: 49, att: 27, tf: null },
+  NAME223: { ct: 27, att: 30, tf: null },
+  HUM211:  { ct: 37, att: 18, tf: null },
+};
+// Optional sessional grade points (0–4). Leave null for no default.
+// Saved entries, including cleared fields, take priority on later visits.
+const HARDCODED_SESSIONAL_CG = {
+  EEE262: 3.5,
+  NAME224: 3.5,
+  NAME248: 4,
+  NAME246: 4,
+};
+
+const CT_ATT_MODE_KEY = 'cgcalc_ct_att_cleared';
+let ctAttCleared = localStorage.getItem(CT_ATT_MODE_KEY) === 'true';
+
+const GRADE_TABLE = [
+  [80, 4.00], [75, 3.75], [70, 3.50], [65, 3.25],
+  [60, 3.00], [55, 2.75], [50, 2.50], [45, 2.25],
+  [40, 2.00], [0, 0.00],
+];
+
+function pctToGP(pct) {
+  for (const [min, gp] of GRADE_TABLE) {
+    if (pct >= min) return gp;
+  }
+  return 0.00;
+}
+
+function gpClass(gp) {
+  if (!gp && gp !== 0) return '';
+  if (gp >= 3.50) return 'high';
+  if (gp >= 2.50) return 'mid';
+  return 'low';
+}
+
+function numInp(id, placeholder, cls='') {
+  return `<input type="number" id="${id}" inputmode="decimal" placeholder="${placeholder}" min="0" step="any" class="${cls}">`;
+}
+
+function buildTable() {
+  const tbody = document.getElementById('table-body');
+  let html = '';
+
+  // ── Theoretical section ──
+  html += `<tr class="section-row"><td colspan="7">Theoretical Courses</td></tr>`;
+
+  for (const c of THEORETICAL) {
+    // CG column is now an editable input too
+    html += `<tr>
+      <td class="name">${c.name}</td>
+      <td class="course-title">${c.title}</td>
+      <td class="credit">${c.ch}</td>
+      <td>${numInp(c.id+'_ct', '—')}</td>
+      <td>${numInp(c.id+'_att', '—')}</td>
+      <td>${numInp(c.id+'_tf', '—')}</td>
+      <td>${numInp(c.id+'_cg', '—', 'cg-input')}</td>
+    </tr>`;
+  }
+
+  // ── Sessional section ──
+  html += `<tr class="section-row"><td colspan="7">Sessional Courses</td></tr>`;
+
+  for (const c of SESSIONAL) {
+    html += `<tr>
+      <td class="name">${c.name}</td>
+      <td class="course-title">${c.title}</td>
+      <td class="credit">${c.ch}</td>
+      <td><input type="number" class="disabled" tabindex="-1" placeholder="—" disabled></td>
+      <td><input type="number" class="disabled" tabindex="-1" placeholder="—" disabled></td>
+      <td><input type="number" class="disabled" tabindex="-1" placeholder="—" disabled></td>
+      <td>${numInp(c.id+'_cg', '—', 'cg-input')}</td>
+    </tr>`;
+  }
+
+  tbody.innerHTML = html;
+}
+
+function save(id) {
+  const el = document.getElementById(id);
+  if (el) localStorage.setItem('cgcalc_'+id, el.value);
+}
+
+function saveAll() {
+  for (const c of THEORETICAL) {
+    ['ct','att','tf','cg'].forEach(f => save(c.id+'_'+f));
+  }
+  for (const c of SESSIONAL) save(c.id+'_cg');
+}
+
+function loadAll() {
+  const theoryFields = THEORETICAL.flatMap(c => [c.id+'_ct', c.id+'_att', c.id+'_tf', c.id+'_cg']);
+  const sessFields   = SESSIONAL.map(c => c.id+'_cg');
+  for (const id of [...theoryFields, ...sessFields]) {
+    const val = localStorage.getItem('cgcalc_'+id);
+    const el = document.getElementById(id);
+    if (el && val !== null) el.value = val;
+  }
+}
+
+function getVal(id) {
+  const el = document.getElementById(id);
+  return el ? (parseFloat(el.value) || 0) : 0;
+}
+
+function hasVal(id) {
+  const el = document.getElementById(id);
+  return el && el.value.trim() !== '';
+}
+
+function applyGpStyle(inp, gp, active) {
+  inp.classList.remove('high','mid','low','cg-auto');
+  if (!active) return;
+  inp.classList.add(gpClass(gp));
+}
+
+function recalc() {
+  saveAll();
+
+  let weightedSum = 0;
+  let totalCH = 0;
+
+  // Theoretical
+  for (const c of THEORETICAL) {
+    const cgInp = document.getElementById(c.id+'_cg');
+    const ctFilled  = hasVal(c.id+'_ct');
+    const attFilled = hasVal(c.id+'_att');
+    const tfFilled  = hasVal(c.id+'_tf');
+    const anyMarks  = ctFilled || attFilled || tfFilled;
+
+    let gp;
+    if (anyMarks && localStorage.getItem('cgcalc_' + c.id + '_manual') !== 'true') {
+      // Marks entered → compute CG; the input remains editable.
+      const ct  = getVal(c.id+'_ct');
+      const att = getVal(c.id+'_att');
+      const tf  = getVal(c.id+'_tf');
+      const pct = ((ct + att + tf) / (c.ch * 100)) * 100;
+      gp = pctToGP(pct);
+      if (cgInp) {
+        cgInp.value = gp.toFixed(2);
+        cgInp.readOnly = false;
+        cgInp.classList.add('cg-auto');
+        // remove colour classes then add grade colour
+        cgInp.classList.remove('high','mid','low');
+        cgInp.classList.add(gpClass(gp));
+      }
+    } else {
+      // No marks or a manual override → use the entered CG
+      if (cgInp) {
+        cgInp.readOnly = false;
+        cgInp.classList.remove('cg-auto');
+      }
+      gp = hasVal(c.id+'_cg') ? getVal(c.id+'_cg') : 0;
+      if (cgInp) {
+        cgInp.classList.remove('high','mid','low');
+        if (hasVal(c.id+'_cg')) cgInp.classList.add(gpClass(gp));
+      }
+    }
+
+    weightedSum += c.ch * gp;
+    totalCH += c.ch;
+  }
+
+  // Sessional
+  for (const c of SESSIONAL) {
+    const gp = hasVal(c.id+'_cg') ? getVal(c.id+'_cg') : 0;
+    weightedSum += c.ch * gp;
+    totalCH += c.ch;
+  }
+
+  const finalCG = totalCH > 0 ? weightedSum / totalCH : 0;
+
+  // Update topbar
+  const cgEl = document.getElementById('final-cg');
+  if (cgEl) {
+    const hasAny = [...document.querySelectorAll('input[type="number"]:not([disabled])')].some(i => i.value !== '');
+    cgEl.textContent = hasAny ? finalCG.toFixed(2) : '—';
+    cgEl.className = 'cg-value ' + (hasAny ? gpClass(finalCG) : '');
+  }
+
+  document.getElementById('total-credits').textContent = totalCH.toFixed(2);
+  document.getElementById('weighted-sum').textContent  = weightedSum.toFixed(4);
+  document.getElementById('credit-info').textContent   = totalCH.toFixed(2) + ' total credits';
+}
+
+function updateCtAttButton() {
+  document.getElementById('ct-att-toggle').textContent = ctAttCleared
+    ? 'Fill CT, Att. & Sessional CG' : 'Clear CT, Att. & Sessional CG';
+}
+
+function fillHardcodedCtAtt(onlyUnsaved = false, fields = ['ct', 'att']) {
+  for (const c of THEORETICAL) {
+    for (const field of fields) {
+      const value = HARDCODED_CT_ATT[c.id]?.[field];
+      const id = c.id + '_' + field;
+      const max = c.ch * ({ ct: 20, att: 10, tf: 70 }[field]);
+      if (typeof value === 'number' && Number.isFinite(value) && value >= 0 && value <= max &&
+          (!onlyUnsaved || localStorage.getItem('cgcalc_' + id) === null)) {
+        document.getElementById(id).value = String(value);
+        localStorage.removeItem('cgcalc_' + c.id + '_manual');
+      }
+    }
+  }
+}
+
+function fillHardcodedSessionalCg(onlyUnsaved = true) {
+  for (const c of SESSIONAL) {
+    const value = HARDCODED_SESSIONAL_CG[c.id];
+    const id = c.id + '_cg';
+    if (typeof value === 'number' && Number.isFinite(value) && value >= 0 && value <= 4 &&
+        (!onlyUnsaved || localStorage.getItem('cgcalc_' + id) === null)) {
+      document.getElementById(id).value = String(value);
+    }
+  }
+}
+
+function toggleCtAtt() {
+  if (ctAttCleared) {
+    fillHardcodedCtAtt();
+    fillHardcodedSessionalCg(false);
+  } else {
+    for (const c of THEORETICAL) {
+      for (const field of ['ct', 'att']) {
+        document.getElementById(c.id + '_' + field).value = '';
+      }
+      // Remove a calculated CG when no marks remain; preserve manual CGs.
+      const cg = document.getElementById(c.id + '_cg');
+      if (cg.classList.contains('cg-auto') && !hasVal(c.id + '_tf')) cg.value = '';
+    }
+  }
+  if (!ctAttCleared) {
+    for (const c of SESSIONAL) {
+      document.getElementById(c.id + '_cg').value = '';
+    }
+  }
+  ctAttCleared = !ctAttCleared;
+  localStorage.setItem(CT_ATT_MODE_KEY, String(ctAttCleared));
+  updateCtAttButton();
+  recalc();
+}
+
+function clearAll() {
+  if (!confirm('Clear all entered data? This cannot be undone.')) return;
+  localStorage.clear();
+  ctAttCleared = true;
+  localStorage.setItem(CT_ATT_MODE_KEY, 'true');
+  updateCtAttButton();
+  document.querySelectorAll('input[type="number"]:not([disabled])').forEach(i => {
+    i.value = '';
+    i.readOnly = false;
+    i.classList.remove('cg-auto','high','mid','low');
+  });
+  document.getElementById('final-cg').textContent = '—';
+  document.getElementById('final-cg').className = 'cg-value';
+  document.getElementById('total-credits').textContent = '—';
+  document.getElementById('weighted-sum').textContent  = '—';
+  saveAll();
+}
+
+// Init
+buildTable();
+loadAll();
+if (!ctAttCleared) fillHardcodedCtAtt(true);
+fillHardcodedCtAtt(true, ['tf']);
+fillHardcodedSessionalCg();
+updateCtAttButton();
+recalc();
+
+function handleMarkInput(event) {
+  const input = event.target;
+  const course = THEORETICAL.find(c => input.id.startsWith(c.id + '_'));
+  if (course) {
+    const key = 'cgcalc_' + course.id + '_manual';
+    if (input.id === course.id + '_cg') {
+      document.getElementById(course.id + '_ct').value = '';
+      document.getElementById(course.id + '_att').value = '';
+      // Keep TF, but let the directly entered CG take priority.
+      localStorage.setItem(key, 'true');
+    } else {
+      // Editing marks resumes automatic CG calculation.
+      localStorage.removeItem(key);
+    }
+  }
+  recalc();
+}
+
+// Attach listeners after building
+document.querySelectorAll('input[type="number"]:not([disabled])').forEach(inp => {
+  inp.addEventListener('input', handleMarkInput);
+});
+</script>
+</body>
+</html>
